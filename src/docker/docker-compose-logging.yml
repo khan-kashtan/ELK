@@ -1,0 +1,59 @@
+version: '3'
+services:
+
+  zipkin:
+    image: openzipkin/zipkin
+    ports:
+      - "9411:9411"
+    networks:
+      - front_net
+      - back_net
+
+  fluentd:
+    image: ${username}/fluentd
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    networks:
+      elastic:
+        aliases:
+          - fluentd
+
+  elasticsearch:
+    image: elasticsearch:7.4.0
+    expose:
+      - 9200
+    ports:
+      - "9200:9200"
+    networks:
+      elastic:
+        aliases:
+          - elasticsearch
+    environment:
+      - discovery.type=single-node
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana-oss:7.4.0
+    ports:
+      - "5601:5601"
+    environment:
+    - SERVER_NAME=kibana.localhost
+    - ELASTICSEARCH_URL=http://elasticsearch-products-740:9200 
+    - ELASTICSEARCH_USERNAME=elastic
+    - ELASTICSEARCH_HOST=elasticsearch
+    - ELASTICSEARCH_PORT=9200
+    - ELASTIC_PWD=changeme
+    - KIBANA_PWD=changeme
+    - SERVER_HOST=0.0.0.0
+    networks:
+      elastic:
+        aliases:
+          - kibana
+
+networks:
+  elastic:
+    ipam:
+      config:
+        - subnet: ${elk_net_range}
+  front_net:
+  back_net:
